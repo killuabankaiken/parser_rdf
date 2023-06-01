@@ -1,6 +1,7 @@
 import pytesseract
 import PyPDF2
 from pdf2image import convert_from_path
+import csv
 import os
 from PIL import Image
 pytesseract.pytesseract.tesseract_cmd = r'D:\tesseract\tesseract.exe'
@@ -8,24 +9,30 @@ pytesseract.pytesseract.tesseract_cmd = r'D:\tesseract\tesseract.exe'
 pdf_file = open('pdf_img.pdf', 'rb')
 pdf_reader = PyPDF2.PdfReader(pdf_file)
 
-print(f"Number of pages: {len(pdf_reader.pages)}")
-for page_num in range(len(pdf_reader.pages)):
-    page = pdf_reader.pages[page_num]
-    width = int(page.mediabox[2])
-    height = int(page.mediabox[3])
 
-    text = page.extract_text()
+with open('output.csv', mode='w', newline='', encoding='utf-8') as output_file:
+    writer = csv.writer(output_file)
 
-    pages = convert_from_path('pdf_img.pdf', dpi=200, first_page=page_num + 1, last_page=page_num + 1,poppler_path=r'D:\poppler-0.68.0\bin')
-    img = pages[0]
-    temp_image = f"page{page_num}.png"
-    img.save(temp_image)
+    for page_num in range(len(pdf_reader.pages)):
+        page = pdf_reader.pages[page_num]
+        width = int(page.mediabox[2])
+        height = int(page.mediabox[3])
 
-    image_text = pytesseract.image_to_string(img)
+        pages = convert_from_path('pdf_img.pdf', dpi=200, first_page=page_num + 1, last_page=page_num + 1, poppler_path=r'D:\poppler-0.68.0\bin')
+        img = pages[0]
+        temp_image = f"page{page_num}.png"
+        img.save(temp_image)
 
-    print(f"Page {page_num + 1}:")
-    print(image_text)
+        image_text = pytesseract.image_to_string(img)
 
-    os.remove(temp_image)
+        print(f"Page {page_num + 1}:")
+        print(image_text)
+
+        rows = image_text.strip().split('\n')
+        for row in rows:
+            cols = row.split()
+            writer.writerow(cols)
+
+        os.remove(temp_image)
 
 pdf_file.close()
